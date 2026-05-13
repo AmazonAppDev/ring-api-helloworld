@@ -1,22 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAccessToken } from '@/lib/auth'
 
-const DEVICE_ID = process.env.NEXT_PUBLIC_RING_DEVICE_ID
 const API_BASE = 'https://api.amazonvision.com'
 
 export async function POST(request: NextRequest) {
   try {
-    const { sdpOffer } = await request.json()
+    const { sdpOffer, deviceId } = await request.json()
 
     if (!sdpOffer) {
       return NextResponse.json({ error: 'Missing sdpOffer' }, { status: 400 })
     }
-    if (!DEVICE_ID) {
-      return NextResponse.json({ error: 'No device ID configured' }, { status: 400 })
+
+    // Use deviceId from request body, fall back to env var
+    const resolvedDeviceId = deviceId || process.env.NEXT_PUBLIC_RING_DEVICE_ID
+    if (!resolvedDeviceId) {
+      return NextResponse.json(
+        { error: 'No device ID provided. Pass deviceId in request body or set NEXT_PUBLIC_RING_DEVICE_ID.' },
+        { status: 400 }
+      )
     }
 
     const token = await getAccessToken()
-    const whepUrl = `${API_BASE}/v1/devices/${DEVICE_ID}/media/streaming/whep/sessions`
+    const whepUrl = `${API_BASE}/v1/devices/${resolvedDeviceId}/media/streaming/whep/sessions`
 
     const response = await fetch(whepUrl, {
       method: 'POST',

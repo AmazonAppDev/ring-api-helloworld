@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, RefObject } from 'react'
 
 interface UseWebRTCStreamOptions {
   videoRef: RefObject<HTMLVideoElement>
+  deviceId?: string
 }
 
 interface UseWebRTCStreamReturn {
@@ -17,7 +18,7 @@ interface UseWebRTCStreamReturn {
  * Manages WebRTC connection to Ring camera stream.
  * Handles ICE gathering, SDP negotiation, and cleanup.
  */
-export function useWebRTCStream({ videoRef }: UseWebRTCStreamOptions): UseWebRTCStreamReturn {
+export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions): UseWebRTCStreamReturn {
   const [streamActive, setStreamActive] = useState(false)
   const [streamError, setStreamError] = useState<string | null>(null)
   const pcRef = useRef<RTCPeerConnection | null>(null)
@@ -62,7 +63,7 @@ export function useWebRTCStream({ videoRef }: UseWebRTCStreamOptions): UseWebRTC
       const res = await fetch('/api/ring/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sdpOffer: pc.localDescription!.sdp }),
+        body: JSON.stringify({ sdpOffer: pc.localDescription!.sdp, deviceId }),
       })
 
       if (!res.ok) {
@@ -79,7 +80,7 @@ export function useWebRTCStream({ videoRef }: UseWebRTCStreamOptions): UseWebRTC
       setStreamError(message)
       setStreamActive(false)
     }
-  }, [videoRef])
+  }, [videoRef, deviceId])
 
   const stopStream = useCallback(async () => {
     pcRef.current?.close()
