@@ -1,1 +1,5 @@
 requests>=2.28.0
+
+# Optional: only needed for `live_view.py --frames`, which receives WebRTC media.
+# aiortc>=1.9
+# av>=12

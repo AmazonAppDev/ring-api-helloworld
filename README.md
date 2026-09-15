@@ -96,6 +96,12 @@ python event_history.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
 
 # Get your user profile
 python user_profile.py --token "eyJ..."
+
+# Open a live view session without a browser, and close it cleanly
+python live_view.py --token "eyJ..."
+
+# Also receive the media and report the resolution and frame rate you actually get
+python live_view.py --token "eyJ..." --frames 60
 ```
 
 > **Tip:** If you don't pass `--device-id`, scripts that need one will auto-discover your first device.
@@ -119,6 +125,7 @@ Each script prints the equivalent `curl` command so you can copy it into Postman
 | `device_configurations.py` | `GET /v1/devices/{id}/configurations` | Motion zones, privacy zones, image settings |
 | `event_history.py` | `GET /v1/history/devices/{id}/events` | Past motion, doorbell, and live view events |
 | `user_profile.py` | `GET /v1/users/me` | Your Ring account ID, name, and email |
+| `live_view.py` | `POST /v1/devices/{id}/media/streaming/whep/sessions` | Open a WHEP live view session from the terminal (no browser) |
 | `explore_apis.py` | All of the above | Interactive menu to call any API |
 
 ---
