@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getAccessToken } from '@/lib/auth'
+import { getAccessToken, getRingApiErrorMessage } from '@/lib/auth'
 
 const DEVICE_ID = process.env.NEXT_PUBLIC_RING_DEVICE_ID
 const DEVICE_NAME = process.env.NEXT_PUBLIC_RING_DEVICE_NAME || 'Camera'
@@ -42,8 +42,9 @@ export async function GET() {
 
     if (!res.ok) {
       const error = await res.text()
+      const fallback = `Device discovery failed: ${res.status} - ${error}`
       return NextResponse.json(
-        { devices: [], error: `Device discovery failed: ${res.status} - ${error}` },
+        { devices: [], error: getRingApiErrorMessage(res.status, fallback) },
         { status: res.status }
       )
     }

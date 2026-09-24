@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAccessToken } from '@/lib/auth'
+import { getAccessToken, getRingApiErrorMessage } from '@/lib/auth'
 
 const API_BASE = 'https://api.amazonvision.com'
 
@@ -34,8 +34,9 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const error = await response.text()
+      const fallback = `WHEP failed: ${response.status} - ${error}`
       return NextResponse.json(
-        { error: `WHEP failed: ${response.status} - ${error}` },
+        { error: getRingApiErrorMessage(response.status, fallback) },
         { status: response.status }
       )
     }

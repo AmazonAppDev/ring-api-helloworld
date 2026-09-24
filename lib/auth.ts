@@ -70,3 +70,24 @@ export async function getAccessToken(): Promise<string> {
     'Authentication not configured. Set RING_ACCESS_TOKEN or RING_REFRESH_TOKEN in .env.local'
   )
 }
+
+/**
+ * Returns an actionable error message for Ring API failures.
+ *
+ * Playground access tokens are short-lived, so a 401 in access-token mode
+ * commonly means the developer needs to generate a fresh token.
+ */
+export function getRingApiErrorMessage(
+  status: number,
+  fallback: string
+): string {
+  if (status === 401 && getAuthMode() === 'access_token') {
+    return (
+      'Ring authentication failed. Your Playground access token may have expired. ' +
+      'Generate a fresh token in the Ring Developer Playground, update ' +
+      'RING_ACCESS_TOKEN in .env.local, and restart the server.'
+    )
+  }
+
+  return fallback
+}
