@@ -94,11 +94,32 @@ python device_configurations.py --token "eyJ..." --device-id "ava1.ring.device.X
 # Get event history (motion events, doorbell presses, live views)
 python event_history.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
 
+# Follow up to five history pages, preserving the API's filters and cursor
+python event_history.py --token "eyJ..." --device-id "ava1.ring.device.XXX" \
+  --event-types "motion.human,ding" --max-pages 5
+
 # Get your user profile
 python user_profile.py --token "eyJ..."
 ```
 
 > **Tip:** If you don't pass `--device-id`, scripts that need one will auto-discover your first device.
+
+Event history fetches one page by default. Set `--max-pages` to follow additional
+pages, including empty pages that still have a continuation link. The returned
+`data` contains the collected events; `links.next`, when present at the limit,
+is the remaining continuation. Requests have a 30-second timeout. Repeated
+continuations stop with a warning, preserving collected events as partial results
+and retaining the repeated `links.next`. HTTP failures raise an error. Access remains limited to events after the
+user's consent, as described in the [Event History API](https://developer.amazon.com/docs/ring/api-documentation.html#event-history).
+
+Run the offline pagination tests from the repository root:
+
+```sh
+python -m pip install -r scripts/requirements.txt
+python -m unittest discover -s scripts -p 'test_*.py' -v
+```
+
+These tests use synthetic HTTP fixtures and need no Ring token or device.
 
 Each script prints the equivalent `curl` command so you can copy it into Postman, your own code, or any HTTP client:
 
@@ -231,6 +252,7 @@ scripts/
 ├── device_location.py         # GET /v1/devices/{id}/location
 ├── device_configurations.py   # GET /v1/devices/{id}/configurations
 ├── event_history.py           # GET /v1/history/devices/{id}/events
+├── test_event_history.py      # Offline event-history pagination tests
 ├── user_profile.py            # GET /v1/users/me
 └── requirements.txt           # Python dependencies
 
