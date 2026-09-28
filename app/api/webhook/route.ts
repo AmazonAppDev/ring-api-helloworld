@@ -89,9 +89,23 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   const encoder = new TextEncoder()
+  let streamController: ReadableStreamDefaultController | undefined
+  let keepAlive: ReturnType<typeof setInterval> | undefined
+
+  const cleanup = () => {
+    if (streamController) {
+      removeClient(streamController)
+      streamController = undefined
+    }
+    if (keepAlive !== undefined) {
+      clearInterval(keepAlive)
+      keepAlive = undefined
+    }
+  }
 
   const stream = new ReadableStream({
     start(controller) {
+      streamController = controller
       addClient(controller)
       controller.enqueue(encoder.encode(': connected\n\n'))
 
@@ -99,18 +113,13 @@ export async function GET() {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
       }
 
-      const keepAlive = setInterval(() => {
+      keepAlive = setInterval(() => {
         try { controller.enqueue(encoder.encode(': ping\n\n')) }
-        catch { clearInterval(keepAlive) }
+        catch { cleanup() }
       }, 30000)
-
-      ;(controller as any)._keepAlive = keepAlive
     },
-    cancel(controller) {
-      removeClient(controller)
-      const keepAlive = (controller as any)._keepAlive
-      if (keepAlive) clearInterval(keepAlive)
-    },
+    // Web Streams passes a cancellation reason, not the stream controller.
+    cancel: cleanup,
   })
 
   return new Response(stream, {
