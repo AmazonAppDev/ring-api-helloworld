@@ -174,6 +174,8 @@ RING_CLIENT_SECRET=your_client_secret_here
 
 All three variables are required. The app automatically refreshes the access token when it expires.
 
+> **Note:** Ring rotates refresh tokens. Every refresh returns a new refresh token and invalidates the previous one. The app keeps the latest one in memory, so after a server restart the value in `.env.local` is no longer valid. In production, persist the rotated refresh token (for example in a secrets store) each time it changes.
+
 See [Authentication](https://developer.amazon.com/docs/ring/authentication.html) for how to obtain refresh tokens through the OAuth account linking flow, and [Configure Your Ring Application](https://developer.amazon.com/docs/ring/app-registration.html) for how to get your client credentials.
 
 ### Device ID (Optional)
@@ -247,8 +249,7 @@ app/
         ├── config/            # Auth mode detection
         ├── devices/           # Device discovery + status
         ├── stream/            # WebRTC WHEP live streaming
-        ├── events/            # Event history
-        └── token/             # Token info
+        └── events/            # Event history
 
 lib/
 ├── auth.ts                    # Token management (access token / refresh token)
