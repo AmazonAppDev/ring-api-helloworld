@@ -6,6 +6,10 @@ export type AuthMode = 'access_token' | 'refresh_token'
 
 let cachedToken: { token: string; expiresAt: number } | null = null
 
+// Each refresh returns a new refresh token and invalidates the old one, so the
+// latest one must be used for the next refresh (the env value only works once).
+let currentRefreshToken: string | null = null
+
 export function getAuthMode(): AuthMode | null {
   if (process.env.RING_ACCESS_TOKEN && process.env.RING_REFRESH_TOKEN) {
     return null // conflict
@@ -42,7 +46,7 @@ export async function getAccessToken(): Promise<string> {
 
     const params = new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: process.env.RING_REFRESH_TOKEN,
+      refresh_token: currentRefreshToken ?? process.env.RING_REFRESH_TOKEN,
       client_id: process.env.RING_CLIENT_ID,
       client_secret: process.env.RING_CLIENT_SECRET,
     })
@@ -59,6 +63,9 @@ export async function getAccessToken(): Promise<string> {
     }
 
     const data = await res.json()
+    if (data.refresh_token) {
+      currentRefreshToken = data.refresh_token
+    }
     cachedToken = {
       token: data.access_token,
       expiresAt: Date.now() + data.expires_in * 1000 - 60000,
