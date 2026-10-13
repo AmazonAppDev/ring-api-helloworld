@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { broadcastEvent, eventStore, addClient, removeClient } from '@/lib/sse-broadcast'
 import { parseRingWebhook } from '@/lib/schemas/webhook'
+import { verifyRingSignature } from '@/lib/verify-signature'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -47,14 +48,23 @@ function normalizeGenericEvent(body: any) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization')
-    const expectedToken = process.env.RING_WEBHOOK_SECRET
+    // Read the RAW body first: the HMAC is computed over these exact bytes.
+    // Calling request.json() here would discard them and make verification
+    // impossible.
+    const rawBody = await request.text()
 
-    if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
+    const verification = verifyRingSignature(rawBody, request.headers)
+    if (!verification.ok) {
+      console.warn('[WEBHOOK] rejected:', verification.reason)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
+    let body: any
+    try {
+      body = JSON.parse(rawBody)
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    }
 
     // Idempotency check
     const requestId = body?.meta?.request_id
