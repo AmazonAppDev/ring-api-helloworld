@@ -316,6 +316,15 @@ curl -X POST http://localhost:3000/api/webhook \
 
 Configure your Ring webhook to POST to `/api/webhook`. Set `RING_WEBHOOK_SECRET` in `.env.local` for authentication.
 
+To send a signed test event (v1.1 payload, `X-Signature: sha256=<hmac>`):
+
+```bash
+cd scripts
+python send_test_webhook.py --url http://localhost:3000/api/webhook --key "your_hmac_signing_key" --type button_press
+```
+
+`--type` takes `motion_detected`, `button_press`, `device_online`, `device_offline`, `device_added` or `device_removed`.
+
 ---
 
 ## API Reference
