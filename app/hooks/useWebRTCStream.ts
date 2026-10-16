@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, RefObject } from 'react'
+import { useState, useRef, useCallback, useEffect, RefObject } from 'react'
 
 interface UseWebRTCStreamOptions {
   videoRef: RefObject<HTMLVideoElement>
@@ -35,8 +35,18 @@ export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions):
       })
       pcRef.current = pc
 
-      pc.addTransceiver('audio', { direction: 'sendrecv' })
+      // Ring's WHEP endpoint only accepts recvonly
+      pc.addTransceiver('audio', { direction: 'recvonly' })
       pc.addTransceiver('video', { direction: 'recvonly' })
+
+      // Ring closes sessions after 30-60s
+      pc.onconnectionstatechange = () => {
+        if (pcRef.current !== pc) return
+        if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+          setStreamActive(false)
+          if (pc.connectionState === 'failed') setStreamError('The live view ended')
+        }
+      }
 
       pc.ontrack = (e) => {
         if (videoRef.current && e.streams[0]) {
@@ -45,7 +55,7 @@ export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions):
         }
       }
 
-      const offer = await pc.createOffer({ offerToReceiveVideo: true, offerToReceiveAudio: true })
+      const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
 
       // Wait for ICE gathering
@@ -75,6 +85,9 @@ export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions):
       sessionUrlRef.current = sessionUrl
       await pc.setRemoteDescription({ type: 'answer', sdp: sdpAnswer })
     } catch (err) {
+      // Clean up so a retry starts fresh
+      pcRef.current?.close()
+      pcRef.current = null
       const message = err instanceof Error ? err.message : 'Stream failed'
       console.error('Stream error:', err)
       setStreamError(message)
@@ -97,6 +110,24 @@ export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions):
     setStreamActive(false)
     setStreamError(null)
   }, [videoRef])
+
+  // Close the session on unmount
+  useEffect(() => {
+    return () => {
+      pcRef.current?.close()
+      pcRef.current = null
+      const sessionUrl = sessionUrlRef.current
+      sessionUrlRef.current = null
+      if (sessionUrl) {
+        fetch('/api/ring/stream', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionUrl }),
+          keepalive: true,
+        }).catch(() => {})
+      }
+    }
+  }, [])
 
   return { streamActive, streamError, startStream, stopStream }
 }
