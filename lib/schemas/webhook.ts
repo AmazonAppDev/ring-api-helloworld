@@ -13,6 +13,8 @@ export const RingWebhookMetaSchema = z.object({
   version: z.string(),
   time: z.string(),
   request_id: z.string(),
+  /** Ring account ID (v1.1) */
+  account_id: z.string().optional(),
 })
 
 /** Ring webhook attributes schema */
@@ -20,6 +22,11 @@ export const RingWebhookAttributesSchema = z.object({
   source: z.string(),
   source_type: z.string(),
   timestamp: z.union([z.number(), z.string()]),
+  timestamp_readable: z.string().optional(),
+  /** Motion subtype or subscription type */
+  sub_type: z.string().optional(),
+  /** Camera index on multi-camera devices */
+  component_ids: z.array(z.string()).optional(),
   confidence: z.number().optional(),
   bounding_box: BoundingBoxSchema.optional(),
   thumbnail_url: z.string().optional(),
@@ -28,7 +35,12 @@ export const RingWebhookAttributesSchema = z.object({
 /** Ring webhook data schema */
 export const RingWebhookDataSchema = z.object({
   id: z.string(),
-  type: z.enum(['motion_detected', 'device_added', 'device_removed', 'person_detected']),
+  // person_detected kept for older payloads
+  type: z.enum([
+    'motion_detected', 'button_press', 'device_added', 'device_removed', 'device_online', 'device_offline',
+    'app_integration_added', 'app_integration_removed', 'subscription_activated', 'subscription_deactivated',
+    'person_detected',
+  ]),
   attributes: RingWebhookAttributesSchema,
   relationships: z.object({
     devices: z.object({

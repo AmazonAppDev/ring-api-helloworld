@@ -20,9 +20,10 @@ export async function POST(request: NextRequest) {
   
   const ringPayload = {
     meta: {
-      version: '1.0',
+      version: '1.1',
       time: new Date().toISOString(),
       request_id: requestId,
+      account_id: 'ava1.ring.account.test',
     },
     data: {
       id: eventId,
