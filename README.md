@@ -174,7 +174,7 @@ RING_CLIENT_SECRET=your_client_secret_here
 
 All three variables are required. The app automatically refreshes the access token when it expires.
 
-See [Authentication](https://developer.amazon.com/docs/ring/authentication.html) for how to obtain refresh tokens through the OAuth account linking flow, and [Configure Your Ring Application](https://developer.amazon.com/docs/ring/app-registration.html) for how to get your client credentials.
+See [Authentication](https://developer.amazon.com/docs/ring/api-documentation.html#partner-initiated-oauth-20-account-linking) for how to obtain refresh tokens through the OAuth account linking flow, and [Configure Your Ring Application](https://developer.amazon.com/docs/ring/api-documentation.html#12-obtain-credentials) for how to get your client credentials.
 
 ### Device ID (Optional)
 
@@ -195,12 +195,12 @@ Do not set both `RING_ACCESS_TOKEN` and `RING_REFRESH_TOKEN` — the app will sh
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `RING_ACCESS_TOKEN` | Access token from the [Playground](https://developer.amazon.com/ring/console/playground) | Yes (if not using refresh token) |
-| `RING_REFRESH_TOKEN` | OAuth refresh token from [account linking](https://developer.amazon.com/docs/ring/authentication.html) | Yes (if not using access token) |
-| `RING_CLIENT_ID` | OAuth client ID from [app registration](https://developer.amazon.com/docs/ring/app-registration.html) | Yes (only with refresh token) |
-| `RING_CLIENT_SECRET` | OAuth client secret from [app registration](https://developer.amazon.com/docs/ring/app-registration.html) | Yes (only with refresh token) |
+| `RING_REFRESH_TOKEN` | OAuth refresh token from [account linking](https://developer.amazon.com/docs/ring/api-documentation.html#partner-initiated-oauth-20-account-linking) | Yes (if not using access token) |
+| `RING_CLIENT_ID` | OAuth client ID from [app registration](https://developer.amazon.com/docs/ring/api-documentation.html#12-obtain-credentials) | Yes (only with refresh token) |
+| `RING_CLIENT_SECRET` | OAuth client secret from [app registration](https://developer.amazon.com/docs/ring/api-documentation.html#12-obtain-credentials) | Yes (only with refresh token) |
 | `NEXT_PUBLIC_RING_DEVICE_ID` | Device ID (skips auto-discovery) | No |
 | `NEXT_PUBLIC_RING_DEVICE_NAME` | Display name for the device | No |
-| `RING_WEBHOOK_SECRET` | Bearer token for [webhook auth](https://developer.amazon.com/docs/ring/notifications.html) | No |
+| `RING_WEBHOOK_SECRET` | Bearer token for [webhook auth](https://developer.amazon.com/docs/ring/api-documentation.html#notifications) | No |
 
 ---
 
@@ -322,9 +322,9 @@ Configure your Ring webhook to POST to `/api/webhook`. Set `RING_WEBHOOK_SECRET`
 
 For full API documentation:
 - [Ring Partner API Documentation](https://developer.amazon.com/docs/ring/api-documentation.html)
-- [Live Video Streaming (WHEP)](https://developer.amazon.com/docs/ring/live-video.html)
-- [Device Discovery](https://developer.amazon.com/docs/ring/device-discovery.html)
-- [Authentication Guide](https://developer.amazon.com/docs/ring/authentication.html)
+- [Live Video Streaming (WHEP)](https://developer.amazon.com/docs/ring/api-documentation.html#live-video)
+- [Device Discovery](https://developer.amazon.com/docs/ring/api-documentation.html#device-discovery)
+- [Authentication Guide](https://developer.amazon.com/docs/ring/api-documentation.html#authentication)
 
 ---
 
