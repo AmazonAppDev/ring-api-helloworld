@@ -176,6 +176,27 @@ All three variables are required. The app automatically refreshes the access tok
 
 See [Authentication](https://developer.amazon.com/docs/ring/authentication.html) for how to obtain refresh tokens through the OAuth account linking flow, and [Configure Your Ring Application](https://developer.amazon.com/docs/ring/app-registration.html) for how to get your client credentials.
 
+### Getting a refresh token: one-way account linking
+
+The app includes the two endpoints Ring's [one-way account linking](https://developer.amazon.com/docs/ring/authentication.html) needs, so you can link a real Ring account and get a refresh token:
+
+| Developer Console field | Endpoint | What it does |
+|---|---|---|
+| Token Exchange URL | `POST /api/ring/link/token` | Ring sends an authorization code; the app exchanges it at `oauth.ring.com`, reads the account id from `/v1/users/me` and keeps the tokens as "unclaimed" |
+| Account Link URL | `GET`/`POST /api/ring/link` | Ring sends the user here with `nonce` and `time`; after the user signs in, the app matches the nonce (HMAC-SHA256 of `<time>:<account_id>`, URL-safe base64) and calls `POST` then `PATCH /v1/accounts/me/app-integrations` |
+
+1. Add your app credentials to `.env.local` (the signing key is the "HMAC Signature Key" from your app's credentials):
+   ```env
+   RING_CLIENT_ID=your_client_id_here
+   RING_CLIENT_SECRET=your_client_secret_here
+   RING_SIGNING_KEY=your_hmac_signing_key_here
+   ```
+2. Expose the app over HTTPS (for example with a tunnel) and set the two URLs above in the Developer Console.
+3. In the Ring app (or ring.com/appstore → Staging Apps), connect your app. Your Ring account needs a location with at least one device.
+4. Sign in on the page that opens. The linked tokens are saved to `.ring-links.json` (mode 600, git-ignored); copy `refreshToken` into `RING_REFRESH_TOKEN`.
+
+The sign-in on that page is a placeholder email field: replace it with your app's real login before production. Tests: `node --test tests/account-linking.test.mjs` (Node 22.18+).
+
 ### Device ID (Optional)
 
 ```env

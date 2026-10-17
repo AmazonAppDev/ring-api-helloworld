@@ -32,3 +32,6 @@ dist/
 # Misc
 *.log
 *.tsbuildinfo
+
+# Linked Ring accounts (tokens) from the account-linking sample
+.ring-links.json
