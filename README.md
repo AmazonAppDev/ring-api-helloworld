@@ -96,6 +96,12 @@ python event_history.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
 
 # Get your user profile
 python user_profile.py --token "eyJ..."
+
+# Download a snapshot (follows the 303 to the pre-signed URL; the token is never sent there)
+python download_snapshot.py --token "eyJ..." --device-id "ava1.ring.device.XXX" --out porch.jpg
+
+# Download a 20 s clip (retries 416/425 while the recording is still processing)
+python download_clip.py --token "eyJ..." --device-id "ava1.ring.device.XXX" --seconds 20 --out clip.mp4
 ```
 
 > **Tip:** If you don't pass `--device-id`, scripts that need one will auto-discover your first device.
@@ -120,6 +126,8 @@ Each script prints the equivalent `curl` command so you can copy it into Postman
 | `event_history.py` | `GET /v1/history/devices/{id}/events` | Past motion, doorbell, and live view events |
 | `user_profile.py` | `GET /v1/users/me` | Your Ring account ID, name, and email |
 | `explore_apis.py` | All of the above | Interactive menu to call any API |
+| `download_snapshot.py` | `POST /v1/devices/{id}/media/image/download` | Still image via the 303 pre-signed URL flow |
+| `download_clip.py` | `POST /v1/devices/{id}/media/video/download` | MP4 clip, retrying 416/425 until ready |
 
 ---
 
@@ -232,6 +240,10 @@ scripts/
 ├── device_configurations.py   # GET /v1/devices/{id}/configurations
 ├── event_history.py           # GET /v1/history/devices/{id}/events
 ├── user_profile.py            # GET /v1/users/me
+├── download_snapshot.py       # POST /v1/devices/{id}/media/image/download (303 flow)
+├── download_clip.py           # POST /v1/devices/{id}/media/video/download (416/425 retry)
+├── media_helpers.py           # Shared snapshot/clip helpers
+├── test_media_helpers.py      # python -m unittest test_media_helpers
 └── requirements.txt           # Python dependencies
 
 app/
@@ -248,6 +260,7 @@ app/
         ├── devices/           # Device discovery + status
         ├── stream/            # WebRTC WHEP live streaming
         ├── events/            # Event history
+        ├── snapshot/          # Device snapshot (303 -> pre-signed URL)
         └── token/             # Token info
 
 lib/
