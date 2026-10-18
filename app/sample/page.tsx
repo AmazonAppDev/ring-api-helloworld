@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useVideoProcessing } from '@/lib/video-processors/useVideoProcessing'
 import '@/lib/video-processors' // Register built-in processors
 
-import { Header } from './components/Header'
-import { EventPanel } from './components/EventPanel'
-import { ProcessorPanel } from './components/ProcessorPanel'
-import { useWebRTCStream } from './hooks/useWebRTCStream'
-import { useEventStream } from './hooks/useEventStream'
-import { useCanvasOverlay } from './hooks/useCanvasOverlay'
+import { Header } from '../components/Header'
+import { EventPanel } from '../components/EventPanel'
+import { ProcessorPanel } from '../components/ProcessorPanel'
+import { useWebRTCStream } from '../hooks/useWebRTCStream'
+import { useEventStream } from '../hooks/useEventStream'
+import { useCanvasOverlay } from '../hooks/useCanvasOverlay'
 
 type RightPanelTab = 'events' | 'processors'
 type AuthMode = 'access_token' | 'refresh_token' | null
