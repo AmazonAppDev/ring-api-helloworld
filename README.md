@@ -96,7 +96,15 @@ python event_history.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
 
 # Get your user profile
 python user_profile.py --token "eyJ..."
+
+# Download a snapshot and clip for the newest event
+python download_media.py --token "eyJ..." --latest
+
+# Or for a specific event (find the ID with event_history.py)
+python download_media.py --token "eyJ..." --event-id "event.XXX" --out ./media
 ```
+
+`download_media.py` handles the parts of media download that are easy to get wrong: the snapshot request answers 303 See Other, a clip answers 200 (full), 206 (partial, printed with the expected `X-Media-Length`) or 303 (the Playground does this), and every pre-signed URL is fetched **without** your bearer token. A 422 `GRECO_NO_VALID_KEY` means one frame could not be decrypted, so it is reported and skipped. 416/425 means "still uploading" so it retries on the documented schedule (5, 10, 20, then 30 seconds, stopping 2 minutes after the range ends), and a 429 honours `Retry-After`. See the [Media Clips](https://developer.amazon.com/docs/ring/api-documentation.html#media-clips) and [Image Snapshots](https://developer.amazon.com/docs/ring/api-documentation.html#image-snapshots) docs.
 
 > **Tip:** If you don't pass `--device-id`, scripts that need one will auto-discover your first device.
 
@@ -231,6 +239,7 @@ scripts/
 ├── device_location.py         # GET /v1/devices/{id}/location
 ├── device_configurations.py   # GET /v1/devices/{id}/configurations
 ├── event_history.py           # GET /v1/history/devices/{id}/events
+├── download_media.py          # POST media/image|video/download (303, 206, 422, retries)
 ├── user_profile.py            # GET /v1/users/me
 └── requirements.txt           # Python dependencies
 
