@@ -94,6 +94,9 @@ python device_configurations.py --token "eyJ..." --device-id "ava1.ring.device.X
 # Get event history (motion events, doorbell presses, live views)
 python event_history.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
 
+# Sensor state: flood, freeze, contact, tamper, temperature/humidity (Early Access sensor scope)
+python sensor_status.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
+
 # Get your user profile
 python user_profile.py --token "eyJ..."
 ```
@@ -118,6 +121,7 @@ Each script prints the equivalent `curl` command so you can copy it into Postman
 | `device_location.py` | `GET /v1/devices/{id}/location` | Country and state (for compliance) |
 | `device_configurations.py` | `GET /v1/devices/{id}/configurations` | Motion zones, privacy zones, image settings |
 | `event_history.py` | `GET /v1/history/devices/{id}/events` | Past motion, doorbell, and live view events |
+| `sensor_status.py` | `GET /v1/devices/{id}/status` | Sensor state: flood, freeze, contact, tamper, readings; flags the never-reported 1970 epoch |
 | `user_profile.py` | `GET /v1/users/me` | Your Ring account ID, name, and email |
 | `explore_apis.py` | All of the above | Interactive menu to call any API |
 
@@ -231,6 +235,7 @@ scripts/
 ├── device_location.py         # GET /v1/devices/{id}/location
 ├── device_configurations.py   # GET /v1/devices/{id}/configurations
 ├── event_history.py           # GET /v1/history/devices/{id}/events
+├── sensor_status.py           # GET /v1/devices/{id}/status (sensors)
 ├── user_profile.py            # GET /v1/users/me
 └── requirements.txt           # Python dependencies
 
