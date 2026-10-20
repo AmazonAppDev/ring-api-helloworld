@@ -316,6 +316,8 @@ curl -X POST http://localhost:3000/api/webhook \
 
 Configure your Ring webhook to POST to `/api/webhook`. Set `RING_WEBHOOK_SECRET` in `.env.local` for authentication.
 
+Ring retries a delivery that gets a 5xx or times out, and sends the same `meta.request_id` each time. The handler records a `request_id` only after the event has been broadcast, so a retry of a failed delivery is processed and a repeat of a successful one is answered with `already_processed`. Run the webhook tests with `npm test`.
+
 ---
 
 ## API Reference
