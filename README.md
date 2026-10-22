@@ -96,7 +96,12 @@ python event_history.py --token "eyJ..." --device-id "ava1.ring.device.XXX"
 
 # Get your user profile
 python user_profile.py --token "eyJ..."
+
+# Download a 1920x1080 snapshot of the newest event (follows the 303 to the pre-signed URL)
+python image_snapshot.py --token "eyJ..." --from-history --out snapshot.jpg
 ```
+
+> **Snapshots in the Developer Playground:** media is only available from when access was granted, so a fresh token sees no history. Trigger an event simulation in the Playground first. `image_snapshot.py` asks for `1920x1080` explicitly (without `resolution` the API returned 640×360) and explains `TIME_RANGE_NOT_AUTHORIZED` / `MEDIA_NOT_FOUND` errors.
 
 > **Tip:** If you don't pass `--device-id`, scripts that need one will auto-discover your first device.
 
@@ -232,6 +237,7 @@ scripts/
 ├── device_configurations.py   # GET /v1/devices/{id}/configurations
 ├── event_history.py           # GET /v1/history/devices/{id}/events
 ├── user_profile.py            # GET /v1/users/me
+├── image_snapshot.py          # POST /v1/devices/{id}/media/image/download
 └── requirements.txt           # Python dependencies
 
 app/
