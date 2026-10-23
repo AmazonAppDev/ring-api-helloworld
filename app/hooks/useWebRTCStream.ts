@@ -16,10 +16,10 @@ interface UseWebRTCStreamReturn {
   stopStream: () => Promise<void>
 }
 
-// How often to check that the video is still advancing, and how many checks in a row
-// without progress count as a stalled stream.
+// Count newly presented frames, not the media element's playback clock:
+// currentTime may advance after the incoming picture has frozen.
 const STALL_CHECK_MS = 2000
-const STALL_CHECKS = 2
+const STALL_AFTER_MS = 6000
 
 /**
  * Manages WebRTC connection to Ring camera stream.
@@ -27,8 +27,8 @@ const STALL_CHECKS = 2
  *
  * A WHEP session can stop delivering frames without any error event (for example when a
  * Developer Playground simulation ends), leaving the last frame frozen on screen. The hook
- * watches the video's playback position and reports `streamStalled` so the UI can offer a
- * reconnect instead of silently showing a still image.
+ * watches for freshly presented video frames and reports `streamStalled` so the UI can
+ * offer a reconnect instead of silently showing a still image.
  */
 export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions): UseWebRTCStreamReturn {
   const [streamActive, setStreamActive] = useState(false)
@@ -52,9 +52,11 @@ export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions):
       pc.addTransceiver('video', { direction: 'recvonly' })
 
       pc.ontrack = (e) => {
-        // Some WHEP answers carry no stream id, so fall back to wrapping the track itself
-        const stream = e.streams[0] ?? (e.track.kind === 'video' ? new MediaStream([e.track]) : null)
-        if (videoRef.current && stream) {
+        // Only the video track should make the preview appear live.
+        if (e.track.kind !== 'video') return
+        // Some WHEP answers omit msid, so the track has no associated stream.
+        const stream = e.streams[0] ?? new MediaStream([e.track])
+        if (videoRef.current) {
           videoRef.current.srcObject = stream
           setStreamActive(true)
         }
@@ -114,21 +116,61 @@ export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions):
     setStreamError(null)
   }, [videoRef])
 
-  // Watch for a frozen picture: the video's currentTime stops advancing while the
-  // peer connection still looks open.
+  // A video element's currentTime can keep advancing even after the remote stream stops
+  // supplying frames. requestVideoFrameCallback observes newly presented frames instead.
+  // Older browsers can use the decoded/presented frame counter where available.
   useEffect(() => {
     if (!streamActive) return
-    let lastTime = -1
-    let stuck = 0
+    const video = videoRef.current
+    if (!video) return
+
+    let lastFrameAt = performance.now()
+    let lastFrameCount = video.getVideoPlaybackQuality?.().totalVideoFrames ?? 0
+    let callbackId: number | null = null
+    let disposed = false
+    const hasFrameCallback = typeof video.requestVideoFrameCallback === 'function'
+    const hasFrameCount = typeof video.getVideoPlaybackQuality === 'function'
+
+    const onFrame = () => {
+      lastFrameAt = performance.now()
+      setStreamStalled(false)
+    }
+
+    const watchFrame: VideoFrameRequestCallback = () => {
+      if (disposed) return
+      onFrame()
+      callbackId = video.requestVideoFrameCallback(watchFrame)
+    }
+
+    if (hasFrameCallback) callbackId = video.requestVideoFrameCallback(watchFrame)
+
+    // Timers and frame callbacks can be throttled in background tabs. Allow the feed
+    // time to recover after the tab becomes visible rather than reporting a false stall.
+    const resetAfterVisibilityChange = () => {
+      lastFrameAt = performance.now()
+      lastFrameCount = video.getVideoPlaybackQuality?.().totalVideoFrames ?? lastFrameCount
+      setStreamStalled(false)
+    }
+    document.addEventListener('visibilitychange', resetAfterVisibilityChange)
+
     const timer = setInterval(() => {
-      const video = videoRef.current
-      if (!video) return
-      stuck = video.currentTime === lastTime ? stuck + 1 : 0
-      lastTime = video.currentTime
-      setStreamStalled(stuck >= STALL_CHECKS)
+      if (document.hidden) return
+
+      if (!hasFrameCallback) {
+        if (!hasFrameCount) return // no reliable frame signal; don't guess from currentTime
+        const count = video.getVideoPlaybackQuality().totalVideoFrames
+        if (count > lastFrameCount) onFrame()
+        lastFrameCount = count
+      }
+
+      setStreamStalled(performance.now() - lastFrameAt >= STALL_AFTER_MS)
     }, STALL_CHECK_MS)
+
     return () => {
+      disposed = true
       clearInterval(timer)
+      document.removeEventListener('visibilitychange', resetAfterVisibilityChange)
+      if (callbackId !== null) video.cancelVideoFrameCallback(callbackId)
       setStreamStalled(false)
     }
   }, [streamActive, videoRef])
