@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, RefObject } from 'react'
+import { useState, useRef, useCallback, useEffect, RefObject } from 'react'
 
 interface UseWebRTCStreamOptions {
   videoRef: RefObject<HTMLVideoElement>
@@ -9,18 +9,31 @@ interface UseWebRTCStreamOptions {
 
 interface UseWebRTCStreamReturn {
   streamActive: boolean
+  /** True while the stream is connected but no new video frames are arriving */
+  streamStalled: boolean
   streamError: string | null
   startStream: () => Promise<void>
   stopStream: () => Promise<void>
 }
 
+// How often to check that the video is still advancing, and how many checks in a row
+// without progress count as a stalled stream.
+const STALL_CHECK_MS = 2000
+const STALL_CHECKS = 2
+
 /**
  * Manages WebRTC connection to Ring camera stream.
  * Handles ICE gathering, SDP negotiation, and cleanup.
+ *
+ * A WHEP session can stop delivering frames without any error event (for example when a
+ * Developer Playground simulation ends), leaving the last frame frozen on screen. The hook
+ * watches the video's playback position and reports `streamStalled` so the UI can offer a
+ * reconnect instead of silently showing a still image.
  */
 export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions): UseWebRTCStreamReturn {
   const [streamActive, setStreamActive] = useState(false)
   const [streamError, setStreamError] = useState<string | null>(null)
+  const [streamStalled, setStreamStalled] = useState(false)
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const sessionUrlRef = useRef<string | null>(null)
 
@@ -39,8 +52,10 @@ export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions):
       pc.addTransceiver('video', { direction: 'recvonly' })
 
       pc.ontrack = (e) => {
-        if (videoRef.current && e.streams[0]) {
-          videoRef.current.srcObject = e.streams[0]
+        // Some WHEP answers carry no stream id, so fall back to wrapping the track itself
+        const stream = e.streams[0] ?? (e.track.kind === 'video' ? new MediaStream([e.track]) : null)
+        if (videoRef.current && stream) {
+          videoRef.current.srcObject = stream
           setStreamActive(true)
         }
       }
@@ -95,8 +110,28 @@ export function useWebRTCStream({ videoRef, deviceId }: UseWebRTCStreamOptions):
     }
     if (videoRef.current) videoRef.current.srcObject = null
     setStreamActive(false)
+    setStreamStalled(false)
     setStreamError(null)
   }, [videoRef])
 
-  return { streamActive, streamError, startStream, stopStream }
+  // Watch for a frozen picture: the video's currentTime stops advancing while the
+  // peer connection still looks open.
+  useEffect(() => {
+    if (!streamActive) return
+    let lastTime = -1
+    let stuck = 0
+    const timer = setInterval(() => {
+      const video = videoRef.current
+      if (!video) return
+      stuck = video.currentTime === lastTime ? stuck + 1 : 0
+      lastTime = video.currentTime
+      setStreamStalled(stuck >= STALL_CHECKS)
+    }, STALL_CHECK_MS)
+    return () => {
+      clearInterval(timer)
+      setStreamStalled(false)
+    }
+  }, [streamActive, videoRef])
+
+  return { streamActive, streamStalled, streamError, startStream, stopStream }
 }

@@ -57,7 +57,7 @@ export default function Dashboard() {
   }, [authMode])
 
   // Custom hooks
-  const { streamActive, streamError, startStream, stopStream } = useWebRTCStream({ videoRef, deviceId })
+  const { streamActive, streamStalled, streamError, startStream, stopStream } = useWebRTCStream({ videoRef, deviceId })
   const { events, connected } = useEventStream({})
   const { processors, results, toggleProcessor, enabledCount } = useVideoProcessing({
     video: videoRef.current,
@@ -128,6 +128,21 @@ export default function Dashboard() {
                 {deviceError && (
                   <p className="text-red-400 text-sm">{deviceError}</p>
                 )}
+              </div>
+            )}
+
+            {streamActive && streamStalled && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
+                <p className="text-white font-bold">Stream stalled: no new video frames</p>
+                <button
+                  onClick={async () => {
+                    await stopStream()
+                    await startStream()
+                  }}
+                  className="px-6 py-3 font-bold rounded-lg transition bg-dash-cyan text-black hover:bg-cyan-300"
+                >
+                  ↻ Reconnect
+                </button>
               </div>
             )}
 
