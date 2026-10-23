@@ -121,6 +121,27 @@ Each script prints the equivalent `curl` command so you can copy it into Postman
 | `user_profile.py` | `GET /v1/users/me` | Your Ring account ID, name, and email |
 | `explore_apis.py` | All of the above | Interactive menu to call any API |
 
+### Add AI: describe a frame with Amazon Bedrock
+
+`describe_frame.py` sends one frame from your Ring camera to Claude on [Amazon Bedrock](https://aws.amazon.com/bedrock/). It gets back structured JSON your code can act on, such as "a package is on the step" or "someone is at the door":
+
+```bash
+python describe_frame.py --image frame.jpg
+```
+
+```json
+{
+  "description": "A yellow package sits on a snowy front porch with a dark doormat.",
+  "person": false,
+  "package": true,
+  "vehicle": false,
+  "activity": "delivery",
+  "concern": ""
+}
+```
+
+You need AWS credentials (`aws configure` or `aws login`) with Bedrock access to an Anthropic Claude model. The default is Claude Haiku 4.5, which takes about 1.3 s per frame. A forced tool call (`toolChoice`) makes the model fill in a JSON schema instead of writing free text. To get a frame, screenshot the live view in the web app below. The Playground sandbox doesn't record, so media download returns 416 there.
+
 ---
 
 ## Step 3: Live Video Stream (Web App)
