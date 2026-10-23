@@ -56,17 +56,10 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
-    // Idempotency check
+    // Idempotency check: skip only deliveries that were already handled successfully.
     const requestId = body?.meta?.request_id
-    if (requestId) {
-      if (processedRequests.has(requestId)) {
-        return NextResponse.json({ status: 'already_processed', request_id: requestId })
-      }
-      processedRequests.add(requestId)
-      if (processedRequests.size > MAX_PROCESSED_IDS) {
-        const idsToDelete = Array.from(processedRequests).slice(0, 100)
-        idsToDelete.forEach((id) => processedRequests.delete(id))
-      }
+    if (requestId && processedRequests.has(requestId)) {
+      return NextResponse.json({ status: 'already_processed', request_id: requestId })
     }
 
     // Validate with Zod and normalize
@@ -80,6 +73,18 @@ export async function POST(request: NextRequest) {
     }
 
     broadcastEvent(event)
+
+    // Record the request id only after handling succeeded. If the handler throws,
+    // the catch below answers 500 and Ring's retry of the same request_id must run
+    // the handler again instead of being acknowledged as already processed.
+    if (requestId) {
+      processedRequests.add(requestId)
+      if (processedRequests.size > MAX_PROCESSED_IDS) {
+        const idsToDelete = Array.from(processedRequests).slice(0, 100)
+        idsToDelete.forEach((id) => processedRequests.delete(id))
+      }
+    }
+
     return NextResponse.json({ status: 'processed', event_id: event.event_id })
   } catch (error) {
     console.error('[WEBHOOK] Error:', error)
