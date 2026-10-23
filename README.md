@@ -119,6 +119,7 @@ Each script prints the equivalent `curl` command so you can copy it into Postman
 | `device_configurations.py` | `GET /v1/devices/{id}/configurations` | Motion zones, privacy zones, image settings |
 | `event_history.py` | `GET /v1/history/devices/{id}/events` | Past motion, doorbell, and live view events |
 | `user_profile.py` | `GET /v1/users/me` | Your Ring account ID, name, and email |
+| `image_snapshot.py` | `POST /v1/devices/{id}/media/image/download` | Save the snapshot at a moment (`--timestamp-ms`, default 5 s ago); follows the 303 to the media host |
 | `explore_apis.py` | All of the above | Interactive menu to call any API |
 
 ---
